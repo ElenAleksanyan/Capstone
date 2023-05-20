@@ -6,14 +6,20 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from folium import plugins
 
+
+
+# Armenian shp file
+armenia = gpd.read_file('./arm_adm_2029_shp')
+
 # Armenian map borders for longitude and latitude values
 armenian_map_borders = {
     "lonMin": 43.45,  
-    "lonMax": 47.17,  
+    "lonMax": 46.62,  
     "latMin": 38.84,  
     "latMax": 41.3 
 }
 
+#Define data from nsstc.nasa.gov website
 lightning_data_source_url = list([(2018, 'https://lightning.nsstc.nasa.gov/isslisib/tmp/lisflashes-46.70.69.250.txt'),
                                   (2019, 'https://lightning.nsstc.nasa.gov/isslisib/tmp/lisflashes-62.3.16.1.txt'),
                                   (2020, 'https://lightning.nsstc.nasa.gov/isslisib/tmp/lisflashes-46.71.128.123.txt'),
@@ -25,6 +31,7 @@ lightning_data_source_url = list([(2018, 'https://lightning.nsstc.nasa.gov/issli
 armenian_lightning_data = {}
 
 
+#Fetch lightning data from Nasa server with provided filters
 def fetch_data_from_server(url, map_borders):
     df = pd.read_csv(url, delimiter='\s+', usecols=[0, 1, 4, 5], names=['Time', 'Months', 'Latitude', 'Longitude'],
                      skiprows=1)
@@ -38,7 +45,7 @@ def fetch_data_from_server(url, map_borders):
                 df['Longitude'] <= map_borders["lonMax"])]
     return filtered_df
 
-##################################################
+#Time activity histogram for 2019-2022
 def create_time_histogram(data):
     time_array = list([])
     for year, value in data.items():
@@ -69,8 +76,8 @@ def create_time_histogram(data):
 
     # Display the histogram
     plt.show()
-############################################
 
+#Drawing histogram with provided yearly data
 def show_histogram(data, l_year):
     # Histogram as a map
     plt.hist2d(data['Longitude'], data['Latitude'], bins=100, cmap='viridis', vmin=0, vmax=9)
@@ -82,7 +89,7 @@ def show_histogram(data, l_year):
     # Show the plot
     plt.show()
 
-
+# Style function for HeatMaps
 def get_styles(feature):
     return {
         'fillColor': 'transparent',
@@ -91,10 +98,7 @@ def get_styles(feature):
     }
 
 
-# Armenian shp file
-armenia = gpd.read_file('C:/Users/aleks/Downloads/arm_adm_2029_shp')
-
-
+#Create dotted map of Armenia in provided data and save in .html format
 def create_map_with_dots(lightning_data, l_color_list):
     # Create a map centered on Armenia
     map_with_dots = folium.Map(location=[40, 45], zoom_start=7.5)
@@ -114,7 +118,7 @@ def create_map_with_dots(lightning_data, l_color_list):
     folium.GeoJson(armenia, style_function=get_styles).add_to(map_with_dots)
     map_with_dots.save('MapWithDots.html')
 
-
+#Create heatmap for provided data(locations and the year)
 def create_heat_map(locations, lightning_year):
     map_of_frequency = folium.Map(location=[40, 45], zoom_start=7.5)
     folium.GeoJson(armenia, style_function=get_styles).add_to(map_of_frequency)
@@ -122,7 +126,7 @@ def create_heat_map(locations, lightning_year):
         map_of_frequency)
     map_of_frequency.save('HeatMap_' + str(lightning_year) + '.html')
 
-#####################################################################
+#Create histogram for monthly distribution for the years 2019-2022 combined
 def create_monthly_histogram_for_all_years(all_years_freq: list):
     monthly_count = list([])
     for i in range(0, 12):
@@ -143,18 +147,20 @@ def create_monthly_histogram_for_all_years(all_years_freq: list):
     ax.legend(loc='upper left')
     plt.show()
 
-#################################################
-
+#Collect all years data 
 for data_source in lightning_data_source_url:
     armenian_lightning_data[data_source[0]] = fetch_data_from_server(data_source[1], armenian_map_borders)
 
+#Draw the histogram-maps for the years 2019-2022
 for year, data in armenian_lightning_data.items():
     if year != 2018:
         show_histogram(data, year)
 
+# Show map with dots for the years 2019-2022        
 color_list = ['red', 'blue', 'orange', 'green']
 create_map_with_dots(dict(sorted(armenian_lightning_data.items(), reverse=True)), color_list)
 
+#Show Heatmaps for the years 2019-2022
 for year, data in armenian_lightning_data.items():
     if year != 2018:
         create_heat_map(data[['Latitude', 'Longitude']].values.tolist(), year)
